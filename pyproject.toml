@@ -94,6 +94,5 @@ ignore = [
     "UP028", # Allow yield in for loop
 ]
 
-
 [tool.coverage.run]
 omit=["src/ppdb_hats/_version.py"]

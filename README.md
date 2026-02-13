@@ -1,50 +1,56 @@
+## Prompt Products Database (PPDB)
 
-# ppdb_hats
+Scripts to "hatsify" difference imaging (DIA) catalog data from PPDB.
 
-Pipeline tools to ingest Rubin PPDB into HATS.
+### Daily stage
 
-[![Template](https://img.shields.io/badge/Template-LINCC%20Frameworks%20Python%20Project%20Template-brightgreen)](https://lincc-ppt.readthedocs.io/en/latest/)
+Each night, increment the existing catalog with new data:
 
-[![PyPI](https://img.shields.io/pypi/v/ppdb_hats?color=blue&logo=pypi&logoColor=white)](https://pypi.org/project/ppdb_hats/)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/camposandro/ppdb_hats/smoke-test.yml)](https://github.com/camposandro/ppdb_hats/actions/workflows/smoke-test.yml)
-[![Codecov](https://codecov.io/gh/camposandro/ppdb_hats/branch/main/graph/badge.svg)](https://codecov.io/gh/camposandro/ppdb_hats)
-[![Read The Docs](https://img.shields.io/readthedocs/ppdb-hats)](https://ppdb-hats.readthedocs.io/)
+- Import the new catalog data (diaObject, diaSource and diaForcedSource) separately into HATS.
 
-This project was automatically generated using the LINCC-Frameworks 
-[python-project-template](https://github.com/lincc-frameworks/python-project-template).
+- Apply post-processing (filter objects by validity start, add magnitudes from fluxes).
 
-A repository badge was added to show that this project uses the python-project-template, however it's up to
-you whether or not you'd like to display it!
+- Nest new sources and forced sources in each object, sorting them by timestamp.
 
-For more information about the project template see the 
-[documentation](https://lincc-ppt.readthedocs.io/en/latest/).
+- Write new daily parquet files, update relevant HATS properties and skymaps.
 
-## Dev Guide - Getting Started
-
-Before installing any dependencies or writing code, it's a great idea to create a
-virtual environment. LINCC-Frameworks engineers primarily use `conda` to manage virtual
-environments. If you have conda installed locally, you can run the following to
-create and activate a new environment.
+This stage avoids rewriting pre-existing files, minimizing I/O.
 
 ```
->> conda create -n <env_name> python=3.12
->> conda activate <env_name>
+dia_object_lc/
+|__ dataset/
+    |__ Norder=2/
+    |   |__ Dir=0/
+    |       |__ Npix=102/
+    |           |__ 2025-11-19.parquet
+    |           |__ 2025-11-18.parquet
+    |           |__ ...
+    |           |__ Npix=102.parquet (past data, aggregated)
+    |__ Norder=4/
+    |   |__ Dir=0/
+    |       |__ Npix=1733/
+    |           |__ 2025-11-19.parquet
+    |           |__ 2025-11-18.parquet
+    |           |__ Npix=1733.parquet (past data, aggregated)
+    |__ .../
+    |__ _common_metadata (constant)
+|__ partition_info.csv (updated)
+|__ hats.properties (updated)
+|__ skymap.fits (updated)
 ```
 
-Once you have created a new environment, you can install this project for local
-development using the following commands:
+### Weekly stage
 
-```
->> ./.setup_dev.sh
->> conda install pandoc
-```
+Every so often, reprocess the catalog, aggregating the pixel data:
 
-Notes:
-1. `./.setup_dev.sh` will initialize pre-commit for this local repository, so
-   that a set of tests will be run prior to completing a local commit. For more
-   information, see the Python Project Template documentation on 
-   [pre-commit](https://lincc-ppt.readthedocs.io/en/latest/practices/precommit.html)
-2. Install `pandoc` allows you to verify that automatic rendering of Jupyter notebooks
-   into documentation for ReadTheDocs works as expected. For more information, see
-   the Python Project Template documentation on
-   [Sphinx and Python Notebooks](https://lincc-ppt.readthedocs.io/en/latest/practices/sphinx.html#python-notebooks)
+- Deduplicate object rows (keeping the latest diaObject-level data for each object).
+
+- Merge each object's source and forced source.
+
+- Reimport according to a more balanced threshold argument.
+
+- Generate collection with margin cache and index catalog.
+
+### Possible improvements
+
+When deduplicating object rows, if some of the most recent object-level data is missing and it existed previously, fill those missing (NaN values) with the latest available information.
