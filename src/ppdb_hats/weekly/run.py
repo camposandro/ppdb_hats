@@ -115,7 +115,8 @@ class WeeklyPipeline(Pipeline):
         aggregated_catalog.write_catalog(tmp_dir / "dia_object_lc", as_collection=False, overwrite=True)
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for weekly PPDB pipeline."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(module)s:%(funcName)s | %(message)s",

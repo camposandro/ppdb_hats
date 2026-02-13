@@ -227,7 +227,8 @@ class DailyPipeline(Pipeline):
         return nest_sources(dia_object, dia_source, dia_forced_source)
 
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for daily PPDB pipeline."""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(module)s:%(funcName)s | %(message)s",

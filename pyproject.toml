@@ -24,6 +24,10 @@ dependencies = [
     "lsst-resources",
 ]
 
+[project.scripts]
+ppdb_hats_daily = "ppdb_hats.daily.run:main"
+ppdb_hats_weekly = "ppdb_hats.weekly.run:main"
+
 [project.urls]
 "Source Code" = "https://github.com/camposandro/ppdb_hats"
 
