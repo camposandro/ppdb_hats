@@ -9,7 +9,8 @@ import pyarrow.parquet as pq
 from hats_import import pipeline_with_client
 from hats_import.catalog.arguments import ImportArguments
 from lsst.resources import ResourcePath
-from ppdb.config import ImportConfig
+
+from ppdb_hats.config import ImportConfig
 
 logger = logging.getLogger(__name__)
 

@@ -6,12 +6,13 @@ from pathlib import Path
 import hats
 import lsdb
 from dask.distributed import Client
-from ppdb.daily.increment import update_metadata, update_skymaps, write_partitions
-from ppdb.daily.ingest import import_catalog
-from ppdb.daily.nest import load_sources_with_margin, nest_sources
-from ppdb.daily.paths import append_input_paths, get_paths
-from ppdb.daily.postprocess import postprocess_catalog
-from ppdb.pipeline import Pipeline
+
+from ppdb_hats.daily.increment import update_metadata, update_skymaps, write_partitions
+from ppdb_hats.daily.ingest import import_catalog
+from ppdb_hats.daily.nest import load_sources_with_margin, nest_sources
+from ppdb_hats.daily.paths import append_input_paths, get_paths
+from ppdb_hats.daily.postprocess import postprocess_catalog
+from ppdb_hats.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 

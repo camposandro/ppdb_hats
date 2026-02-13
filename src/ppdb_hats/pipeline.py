@@ -11,7 +11,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from dask.distributed import Client
-from ppdb.config import PipelineConfig, get_default_config
+
+from ppdb_hats.config import PipelineConfig, get_default_config
 
 logger = logging.getLogger(__name__)
 
