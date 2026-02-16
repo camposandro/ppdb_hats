@@ -5,6 +5,7 @@ PPDB pipelines (Dask, filesystem paths and import settings).
 """
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 
@@ -110,6 +111,7 @@ class PostProcessConfig:
         "yErr",
         "midpointMjdTai",
         "radecMjdTai",
+        "validityStartMjdTai",
     )
 
 
@@ -127,6 +129,8 @@ class PipelineConfig:
         Import-specific configuration.
     postprocess_config : PostProcessConfig
         Post-processing configuration.
+    until_date : datetime.date
+        Inclusive upper bound date for files.
     margin_threshold : float
         Margin threshold in arcseconds used by default.
     """
@@ -135,10 +139,11 @@ class PipelineConfig:
     paths: PathConfig
     import_config: ImportConfig
     postprocess_config: PostProcessConfig
+    until_date: date = date.today()
     margin_threshold: float = 5
 
 
-def get_default_config() -> PipelineConfig:
+def get_default_config(**kwargs) -> PipelineConfig:
     """Return a :class:`PipelineConfig` filled with sensible defaults.
 
     Returns
@@ -152,4 +157,5 @@ def get_default_config() -> PipelineConfig:
         paths=PathConfig(),
         import_config=ImportConfig(),
         postprocess_config=PostProcessConfig(),
+        **kwargs
     )

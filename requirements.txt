@@ -1,4 +1,4 @@
-git+https://github.com/astronomy-commons/hats.git@main
-git+https://github.com/astronomy-commons/hats-import.git@main
-git+https://github.com/astronomy-commons/lsdb.git@main
-git+https://github.com/lincc-frameworks/nested-pandas.git@main
+hats @ git+https://github.com/astronomy-commons/hats.git@main
+hats-import @ git+https://github.com/astronomy-commons/hats-import.git@main
+lsdb @ git+https://github.com/astronomy-commons/lsdb.git@main
+nested-pandas @ git+https://github.com/lincc-frameworks/nested-pandas.git@main

@@ -40,6 +40,7 @@ class Pipeline(ABC):
         """
         self.config = config or get_default_config()
 
+
     def execute(self, *args, **kwargs):
         """Execute the pipeline with a Dask client and temporary directory.
 
@@ -51,9 +52,28 @@ class Pipeline(ABC):
         *args, **kwargs
             Passed through to :meth:`run` implemented by subclasses.
         """
+        self._configure_logging()        
         logger.info("Starting pipeline...")
         with tempfile.TemporaryDirectory() as tmp_dir:
             self._run_with_client(Path(tmp_dir), *args, **kwargs)
+
+    def _configure_logging(self):
+        """Configure logging for the pipeline.
+
+        This method sets up logging with a specific format and level. It
+        is called at the beginning of the ``execute`` method to ensure
+        that all log messages from the pipeline are properly formatted.
+        """
+        ppdb_logger = logging.getLogger(__package__)
+        if not ppdb_logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                "%(asctime)s | %(module)s:%(funcName)s | %(message)s",
+                datefmt="%H:%M:%S",
+            )
+            handler.setFormatter(formatter)
+            ppdb_logger.addHandler(handler)
+        ppdb_logger.setLevel(logging.INFO)
 
     def _run_with_client(self, tmp_dir: Path, *args, **kwargs):
         """Create a Dask client and execute the pipeline.
@@ -93,15 +113,3 @@ class Pipeline(ABC):
         """
         raise NotImplementedError("Subclasses must implement the run method.")
 
-
-def execute_pipeline(pipeline: Pipeline, *args, **kwargs):
-    """Convenience wrapper to execute a :class:`Pipeline` instance.
-
-    Parameters
-    ----------
-    pipeline : Pipeline
-        Pipeline instance to execute.
-    *args, **kwargs
-        Passed to :meth:`Pipeline.execute`.
-    """
-    pipeline.execute(*args, **kwargs)

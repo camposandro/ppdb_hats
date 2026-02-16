@@ -35,8 +35,6 @@ class DailyPipeline(Pipeline):
         tmp_dir : pathlib.Path
             Temporary directory used for intermediate HATS artifacts.
         """
-        cfg = self.config
-
         # Step 1: Open existing catalog
         catalog, existing_pixels, mapping_order = self._open_catalog()
 
@@ -61,13 +59,14 @@ class DailyPipeline(Pipeline):
         new_dia_object_lc = self._nest_sources(client, tmp_dir)
 
         # Step 7: Write partitions and update metadata
-        results = write_partitions(new_dia_object_lc, catalog, mapping_order)
+        npix_suffix = f"/{self.config.until_date}.parquet"
+        results = write_partitions(new_dia_object_lc, catalog, mapping_order, npix_suffix)
         new_pixels, new_counts, new_histograms = results
         update_skymaps(catalog, new_histograms, mapping_order)
         update_metadata(catalog, new_pixels, new_counts)
 
         # Step 8: Save provenance
-        dia_object_collection_dir = cfg.paths.dia_object_collection_dir
+        dia_object_collection_dir = self.config.paths.dia_object_collection_dir
         append_input_paths("dia_object", object_files, dia_object_collection_dir)
         append_input_paths("dia_source", source_files, dia_object_collection_dir)
         append_input_paths("dia_forced_source", fsource_files, dia_object_collection_dir)
@@ -91,7 +90,7 @@ class DailyPipeline(Pipeline):
         """
         catalog_path = self.config.paths.dia_object_collection_dir
         logger.info("Opening catalog at %s...", catalog_path)
-        catalog = hats.read_hats(catalog_path)
+        catalog = hats.read_hats(catalog_path).main_catalog
         if catalog.catalog_info.npix_suffix != "/":
             raise ValueError("Catalog must have leaf pixel directories (npix_suffix='/')")
         existing_pixels = [(p.order, p.pixel) for p in catalog.get_healpix_pixels()]
@@ -109,10 +108,11 @@ class DailyPipeline(Pipeline):
         """
         ppdb_lsst_dir = self.config.paths.ppdb_lsst_dir
         dia_object_collection_dir = self.config.paths.dia_object_collection_dir
+        until_date = self.config.until_date
 
-        object_files = get_paths("dia_object", ppdb_lsst_dir, dia_object_collection_dir)
-        source_files = get_paths("dia_source", ppdb_lsst_dir, dia_object_collection_dir)
-        fsource_files = get_paths("dia_forced_source", ppdb_lsst_dir, dia_object_collection_dir)
+        object_files = get_paths("dia_object", ppdb_lsst_dir, until_date, dia_object_collection_dir)
+        source_files = get_paths("dia_source", ppdb_lsst_dir, until_date, dia_object_collection_dir)
+        fsource_files = get_paths("dia_forced_source", ppdb_lsst_dir, until_date, dia_object_collection_dir)
 
         logger.info("Found %d new object files", len(object_files))
         logger.info("Found %d new source files", len(source_files))
@@ -187,22 +187,24 @@ class DailyPipeline(Pipeline):
         )
 
         # dia_source: calculate magnitudes, optimize types
-        postprocess_catalog(
-            client,
-            tmp_dir,
-            "dia_source",
-            position_time_cols=position_time_cols,
-            flux_colnames=["scienceFlux"],
-        )
+        if (tmp_dir / "dia_source").exists():
+            postprocess_catalog(
+                client,
+                tmp_dir,
+                "dia_source",
+                position_time_cols=position_time_cols,
+                flux_colnames=["scienceFlux"],
+            )
 
         # dia_forced_source: calculate magnitudes, optimize types
-        postprocess_catalog(
-            client,
-            tmp_dir,
-            "dia_forced_source",
-            position_time_cols=position_time_cols,
-            flux_colnames=["scienceFlux"],
-        )
+        if (tmp_dir / "dia_forced_source").exists():
+            postprocess_catalog(
+                client,
+                tmp_dir,
+                "dia_forced_source",
+                position_time_cols=position_time_cols,
+                flux_colnames=["scienceFlux"],
+            )
 
     def _nest_sources(self, client, tmp_dir) -> lsdb.Catalog:
         """Nest dia_source and dia_forced_source catalogs into dia_object.
@@ -214,24 +216,26 @@ class DailyPipeline(Pipeline):
         tmp_dir : pathlib.Path
             Directory containing the imported HATS catalogs to nest.
         """
-        margin_threshold = self.config.nest_config.margin_threshold
+        margin_threshold = self.config.margin_threshold
 
         dia_object = lsdb.open_catalog(tmp_dir / "dia_object")
-        dia_source = load_sources_with_margin(client, tmp_dir, "dia_source", margin_threshold)
-        dia_forced_source = load_sources_with_margin(client, tmp_dir, "dia_forced_source", margin_threshold)
 
-        # Temporary fix: Filter invalid sources (sources without object associations)
-        dia_source = dia_source[~dia_source["diaObjectId"].isna()]
-        dia_forced_source = dia_forced_source[~dia_forced_source["diaObjectId"].isna()]
+        dia_source = None
+        dia_forced_source = None
+
+        if (tmp_dir / "dia_source").exists():
+            dia_source = load_sources_with_margin(client, tmp_dir, "dia_source", margin_threshold)
+            # Temporary fix: Filter invalid sources (sources without object associations)
+            dia_source = dia_source[~dia_source["diaObjectId"].isna()]
+
+        if (tmp_dir / "dia_forced_source").exists():
+            dia_forced_source = load_sources_with_margin(client, tmp_dir, "dia_forced_source", margin_threshold)
+            # Temporary fix: Filter invalid sources (sources without object associations)
+            dia_forced_source = dia_forced_source[~dia_forced_source["diaObjectId"].isna()]
 
         return nest_sources(dia_object, dia_source, dia_forced_source)
 
 
-def main():
+def main(config):
     """Main entry point for daily PPDB pipeline."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(module)s:%(funcName)s | %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    DailyPipeline().execute()
+    DailyPipeline(config=config).execute()

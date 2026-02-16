@@ -1,27 +1,21 @@
 """Utilities to write increment data and metadata"""
 
 import logging
-from datetime import datetime
 
 import dask
-import hats
 import numpy as np
 from hats.catalog import PartitionInfo
 from hats.io import paths
 from hats.io.file_io import write_fits_image
-from hats.io.paths import PARTITION_PIXEL
 from hats.io.skymap import read_skymap, write_skymap
 from hats.pixel_math.sparse_histogram import HistogramAggregator, SparseHistogram
 from lsdb.io.common import new_provenance_properties
 from lsdb.io.to_hats import calculate_histogram, create_modified_catalog_structure
 
-# The new parquet files will be named after the current date.
-NPIX_SUFFIX = f"/{datetime.now().strftime('%Y-%m-%d')}.parquet"
-
 logger = logging.getLogger(__name__)
 
 
-def write_partitions(catalog, base_catalog, histogram_order, **kwargs):
+def write_partitions(catalog, base_catalog, histogram_order, npix_suffix, **kwargs):
     """Write all catalog partitions to disk as parquet files.
 
     Uses Dask delayed tasks to write each partition in parallel.
@@ -35,6 +29,8 @@ def write_partitions(catalog, base_catalog, histogram_order, **kwargs):
         Base HATS catalog for output path determination.
     histogram_order : int
         HEALPix order for histogram calculations.
+    npix_suffix : str
+        Suffix for npix files (e.g., "/2025-10-01.parquet").
     **kwargs
         Additional keyword arguments passed to ``to_parquet``.
 
@@ -59,6 +55,7 @@ def write_partitions(catalog, base_catalog, histogram_order, **kwargs):
                 pixel,
                 base_catalog_dir,
                 histogram_order,
+                npix_suffix,
                 **kwargs,
             )
         )
@@ -78,7 +75,7 @@ def write_partitions(catalog, base_catalog, histogram_order, **kwargs):
 
 
 @dask.delayed
-def perform_write(df, hp_pixel, base_catalog_dir, histogram_order, **kwargs):
+def perform_write(df, hp_pixel, base_catalog_dir, histogram_order, npix_suffix, **kwargs):
     """Write a partition to disk and compute histogram.
 
     Delayed task that writes partition data to parquet and calculates
@@ -94,6 +91,8 @@ def perform_write(df, hp_pixel, base_catalog_dir, histogram_order, **kwargs):
         Base directory of the HATS catalog.
     histogram_order : int
         Order for histogram calculation.
+    npix_suffix : str
+        Suffix for npix files.
     **kwargs
         Additional keyword arguments passed to ``to_parquet``.
 
@@ -105,12 +104,7 @@ def perform_write(df, hp_pixel, base_catalog_dir, histogram_order, **kwargs):
     if len(df) == 0:
         return 0, SparseHistogram([], [], histogram_order)
     # The parquet leaf files live in a pixel directory. Create it if it does not exist.
-    pixel_dir = (
-        hats.io.pixel_directory(base_catalog_dir, hp_pixel.order, hp_pixel.pixel)
-        / f"{PARTITION_PIXEL}={hp_pixel.pixel}"
-    )
-    hats.io.file_io.make_directory(pixel_dir, exist_ok=True)
-    pixel_path = paths.pixel_catalog_file(base_catalog_dir, hp_pixel, npix_suffix=NPIX_SUFFIX)
+    pixel_path = paths.new_pixel_catalog_file(base_catalog_dir, hp_pixel, npix_suffix=npix_suffix)
     df.to_parquet(pixel_path.path, filesystem=pixel_path.fs, **kwargs)
     return len(df), calculate_histogram(df, histogram_order)
 

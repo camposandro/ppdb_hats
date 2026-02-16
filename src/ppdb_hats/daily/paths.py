@@ -13,17 +13,19 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+
+
+
 def get_paths(
     dataset_type: str,
     input_lsst_dir: Path,
+    until_date: date,
     collection_path: Optional[Path] = None,
-    from_date: Optional[date] = None,
-    until_date: Optional[date] = None,
 ) -> list:
-    """Return parquet files for a dataset type within a date range (inclusive).
+    """Return parquet files for a dataset type up to and including until_date.
 
     Discovers new input files by comparing against previously imported files
-    and optionally filters them by a date range.
+    and optionally filters them by until_date.
 
     Parameters
     ----------
@@ -31,10 +33,10 @@ def get_paths(
         Type of dataset (``'dia_object'``, ``'dia_source'``, ``'dia_forced_source'``).
     input_lsst_dir : pathlib.Path
         Root directory containing LSST PPDB data.
+    until_date : datetime.date or None, optional
+        Inclusive upper bound date for files.
     collection_path : pathlib.Path or None, optional
         Path to the existing HATS collection for provenance tracking.
-    from_date, until_date : datetime.date or None, optional
-        Inclusive date range to filter files. ``None`` means unbounded.
 
     Returns
     -------
@@ -45,7 +47,7 @@ def get_paths(
     dataset_name = "".join(word.capitalize() for word in dataset_type.split("_"))
     all_paths = input_lsst_dir.rglob(f"{dataset_name}.parquet")
     new_paths = sorted(set(all_paths) - set(used_paths))
-    return [path for path in new_paths if _in_range(_file_date(path, input_lsst_dir), from_date, until_date)]
+    return [path for path in new_paths if _file_date(path, input_lsst_dir) <= until_date]
 
 
 def _file_date(path: Path, input_lsst_dir: Path) -> date:
@@ -66,24 +68,6 @@ def _file_date(path: Path, input_lsst_dir: Path) -> date:
         Date object representing the file generation date.
     """
     return date(*map(int, path.relative_to(input_lsst_dir).parts[:3]))
-
-
-def _in_range(d: date, start: Optional[date], end: Optional[date]) -> bool:
-    """Return whether ``d`` lies within the inclusive range ``[start, end]``.
-
-    Parameters
-    ----------
-    d : datetime.date
-        Date to test.
-    start, end : datetime.date or None
-        Inclusive range bounds. ``None`` means unbounded on that side.
-
-    Returns
-    -------
-    bool
-        ``True`` if ``d`` is within the range, else ``False``.
-    """
-    return (start is None or d >= start) and (end is None or d <= end)
 
 
 def _load_used_paths(dataset_type: str, collection_path: Path) -> list:
