@@ -13,9 +13,6 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-
-
-
 def get_paths(
     dataset_type: str,
     input_lsst_dir: Path,

@@ -229,7 +229,9 @@ class DailyPipeline(Pipeline):
             dia_source = dia_source[~dia_source["diaObjectId"].isna()]
 
         if (tmp_dir / "dia_forced_source").exists():
-            dia_forced_source = load_sources_with_margin(client, tmp_dir, "dia_forced_source", margin_threshold)
+            dia_forced_source = load_sources_with_margin(
+                client, tmp_dir, "dia_forced_source", margin_threshold
+            )
             # Temporary fix: Filter invalid sources (sources without object associations)
             dia_forced_source = dia_forced_source[~dia_forced_source["diaObjectId"].isna()]
 

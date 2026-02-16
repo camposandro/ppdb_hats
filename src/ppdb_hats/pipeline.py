@@ -40,7 +40,6 @@ class Pipeline(ABC):
         """
         self.config = config or get_default_config()
 
-
     def execute(self, *args, **kwargs):
         """Execute the pipeline with a Dask client and temporary directory.
 
@@ -52,7 +51,7 @@ class Pipeline(ABC):
         *args, **kwargs
             Passed through to :meth:`run` implemented by subclasses.
         """
-        self._configure_logging()        
+        self._configure_logging()
         logger.info("Starting pipeline...")
         with tempfile.TemporaryDirectory() as tmp_dir:
             self._run_with_client(Path(tmp_dir), *args, **kwargs)
@@ -112,4 +111,3 @@ class Pipeline(ABC):
             Extra parameters specific to concrete pipelines.
         """
         raise NotImplementedError("Subclasses must implement the run method.")
-

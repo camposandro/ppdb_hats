@@ -157,5 +157,5 @@ def get_default_config(**kwargs) -> PipelineConfig:
         paths=PathConfig(),
         import_config=ImportConfig(),
         postprocess_config=PostProcessConfig(),
-        **kwargs
+        **kwargs,
     )
