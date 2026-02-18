@@ -15,9 +15,9 @@ include_notebooks: true
 mypy_type_checking: none
 package_name: ppdb_hats
 project_description: Pipeline tools to ingest Rubin PPDB into HATS.
-project_license: MIT
+project_license: BSD
 project_name: ppdb_hats
-project_organization: camposandro
+project_organization: astronomy-commons
 python_versions:
 - '3.11'
 - '3.12'
