@@ -48,7 +48,7 @@ To install the package, execute:
 pip install .
 ```
 
-The pipelines can be run programmatically: 
+The pipelines can be run programmatically:
 
 ```python
 from ppdb_hats.daily.run import DailyPipeline
@@ -58,8 +58,10 @@ DailyPipeline().execute()
 Or from the terminal via console scripts (`ppdb_hats_daily` and `ppdb_hats_weekly`), which are provided by the package entry points:
 
 ```bash
-ppdb_hats_daily   
+ppdb_hats_daily
 ```
+
+You can find a demo in our documentation [here](./docs/pre_executed/demo.ipynb).
 
 **Note:** The package is Rubin-specific and requires access to the PPDB data which is only available at USDF.
 
