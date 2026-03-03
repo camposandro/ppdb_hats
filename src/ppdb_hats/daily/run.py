@@ -44,6 +44,7 @@ class DailyPipeline(Pipeline):
 
         if len(object_files) == 0:
             logger.info("New data is not available.")
+            return
 
         # Step 3: Import catalogs
         self._import_base_catalogs(
